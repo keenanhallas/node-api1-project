@@ -22,42 +22,47 @@ let users = [
     }
 ]
 
+//Sanity test
 server.get("/", (req, res) => {
     res.status(200).json({greeting: "Hello world!"});
 });
 
+//Get all users
 server.get("/api/users", (req, res) => {
-    if (users && users.length > 0) {
+    if (users && users.length > 0) { //is this an ok way to mock an error in retrieving the _users_ from the database?
         res.status(200).json(users);
     } else {
         res.status(500).json({ errorMessage: "The users information could not be retrieved." }); //does it matter if your failure is in the if or the else?
     }
 });
 
-//POST A NEW USER
-server.post("/api/users", (req, res) => {
-    const newUser = Object.assign(req.body, { id: shortid.generate()});
-    console.log(req.body);
-    if (newUser.name && newUser.bio) {
-        users.push(newUser);
-        res.status(201).json(newUser);
-    } else {
-        res.status(400).json({ errorMessage: "Please provide name and bio for the user." });
+//Get a specific user
+server.get("/api/users/:id", (req, res) => {
+    const id = Number(req.params.id);
+    neededUser = users.filter(user => user.id === id);
+
+    try {
+        if (neededUser) {
+            res.status(200).json(neededUser);
+        } else if (!neededUser) {
+            res.status(404).json({ message: "The user with the specified ID does not exist." });
+        }
+    } catch (error) {
+        res.status(500).json({ errorMessage: "The user information could not be retrieved." });
     }
 });
 
-// server.post("/api/users", (req, res) => {
-//     const newUser = req.body;
-//     newUser.id = shortid.generate();
-//     users.push(newUser)
-//     res.status(201).json({ message: newUser })
-//     if(!newUser){
-//         res.status(404).json({ errorMessage: "Please provide name and bio for the user." })
-//     }else{
-//         res.status(500).json({ errorMessage: "There was an error while saving the user to the database." })
-//     }
-// })
-
-server.get("/api/users/:id", (req, res) => {
-
+//Post a new user
+server.post("/api/users", (req, res) => { //the order of object properties doesn't matter when posting, right?
+    const newUser = Object.assign(req.body, { id: shortid.generate()});
+    try{
+        if (!newUser.name || !newUser.bio) {
+            res.status(400).json({ errorMessage: "Please provide name and bio for the user." });
+        } else {
+            users.push(newUser);
+            res.status(201).json(newUser); //is this the user document?
+        }
+    } catch (error) {
+        res.status(500).json({ errorMessage: "There was an error while saving the user to the database" });
+    }
 });
