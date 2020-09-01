@@ -37,14 +37,13 @@ server.get("/api/users", (req, res) => {
 });
 
 //Get a specific user
-server.get("/api/users/:id", (req, res) => {
-    const id = Number(req.params.id);
-    neededUser = users.filter(user => user.id === id);
-
+server.get("/api/users/:id", (req, res) => {    
     try {
-        if (neededUser) {
+        const id = Number(req.params.id);
+        neededUser = users.filter(user => user.id === id);
+        if (neededUser.length > 0) {
             res.status(200).json(neededUser);
-        } else if (!neededUser) {
+        } else {
             res.status(404).json({ message: "The user with the specified ID does not exist." });
         }
     } catch (error) {
@@ -54,8 +53,8 @@ server.get("/api/users/:id", (req, res) => {
 
 //Post a new user
 server.post("/api/users", (req, res) => { //the order of object properties doesn't matter when posting, right?
-    const newUser = Object.assign(req.body, { id: shortid.generate()});
     try{
+        const newUser = Object.assign(req.body, { id: shortid.generate()});
         if (!newUser.name || !newUser.bio) {
             res.status(400).json({ errorMessage: "Please provide name and bio for the user." });
         } else {
@@ -66,3 +65,40 @@ server.post("/api/users", (req, res) => { //the order of object properties doesn
         res.status(500).json({ errorMessage: "There was an error while saving the user to the database" });
     }
 });
+
+//Delete a user
+server.delete("/api/users/:id", (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        remainingUsers = users.filter(user => user.id !== id);
+        if (remainingUsers.length === users.length) {
+            res.status(404).json({ message: "The user with the specified ID does not exist." });
+        } else {
+            res.status(200).json(remainingUsers);
+        }
+    } catch (error) {
+        res.status(500).json({ errorMessage: "The user could not be removed" });
+    }
+});
+
+//Edit a user
+server.put("/api/users/:id", (req, res) => {
+    const changes = req.body;
+    const id = Number(req.params.id);
+
+    const found = users.find(user => user.id === id);
+
+    try {
+        if (!req.body.name || !req.body.bio) {
+            res.status(400).json({ errorMessage: "Please provide name and bio for the user." });
+        } else if (found) {
+            const updatedUser = Object.assign(found, changes);
+            res.status(200).json(updatedUser);
+        } else {
+            res.status(404).json({ message: "The user with the specified ID does not exist." });
+        }
+    } catch (error) {
+        res.status(500).json({ errorMessage: "The user information could not be modified." });
+    }
+});
+
